@@ -1,0 +1,1762 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>极简Todo Pro | 莫奈色主题</title>
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <!-- Theme Color for PWA -->
+    <meta name="theme-color" content="#6366f1">
+    <!-- Icons for PWA (Add your own icon links here) -->
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png"> 
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-light: #818cf8;
+            --primary-dark: #4f46e5;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --bg: #f1f5f9;
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --border: rgba(203, 213, 225, 0.6);
+            --shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+        }
+
+        .dark-mode {
+            --primary: #818cf8;
+            --primary-light: #a5b4fc;
+            --primary-dark: #6366f1;
+            --text: #e2e8f0;
+            --text-light: #94a3b8;
+            --bg: #0f172a;
+            --card-bg: rgba(15, 23, 42, 0.8);
+            --border: rgba(30, 41, 59, 0.6);
+            --shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 1rem;
+            background-image:
+                radial-gradient(at 80% 20%, var(--primary-light) 0%, transparent 50%),
+                radial-gradient(at 20% 80%, var(--primary-dark) 0%, transparent 50%);
+            transition: all 0.6s cubic-bezier(0.2, 0, 0, 1);
+        }
+
+        @supports (font-variation-settings: normal) {
+            body {
+                font-family: 'Inter var', -apple-system, BlinkMacSystemFont, sans-serif;
+            }
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.8s 0.2s cubic-bezier(0.2, 0, 0, 1) forwards;
+        }
+
+        /* 导航栏 */
+        .app-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .app-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(to right, var(--primary), var(--primary-light));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.025em;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 0.5rem;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 0.75rem;
+            padding: 0.25rem;
+            border: 1px solid var(--border);
+        }
+
+        .nav-tab {
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            border: none;
+            background: transparent;
+            color: var(--text-light);
+            font-family: inherit;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .nav-tab.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* 内容区域 */
+        .content-area {
+            display: none;
+        }
+
+        .content-area.active {
+            display: block;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        /* Todo页面 */
+        .stats {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            animation: fadeInUp 0.8s 0.4s cubic-bezier(0.2, 0, 0, 1) both;
+        }
+
+        .stat {
+            flex: 1;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.4s cubic-bezier(0.2, 0, 0, 1);
+            transform: translateY(10px);
+            opacity: 0;
+        }
+
+        .stat:nth-child(1) { animation: statPopIn 0.6s 0.5s cubic-bezier(0.2, 0, 0, 1) forwards; }
+        .stat:nth-child(2) { animation: statPopIn 0.6s 0.6s cubic-bezier(0.2, 0, 0, 1) forwards; }
+        .stat:nth-child(3) { animation: statPopIn 0.6s 0.7s cubic-bezier(0.2, 0, 0, 1) forwards; }
+
+        .stat-value {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 1.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        .todo-container {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 1.25rem;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 1.5rem;
+            transform: translateY(20px);
+            opacity: 0;
+            animation: fadeInUp 0.8s 0.8s cubic-bezier(0.2, 0, 0, 1) forwards;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        input[type="text"], input[type="time"], select {
+            flex: 1;
+            padding: 0.875rem 1.25rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.5);
+            color: var(--text);
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.4s cubic-bezier(0.2, 0, 0, 1);
+        }
+
+        .dark-mode input[type="text"], .dark-mode input[type="time"], .dark-mode select {
+            background: rgba(15, 23, 42, 0.5);
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .add-btn {
+            padding: 0 1.5rem;
+            border-radius: 0.75rem;
+            border: none;
+            background: linear-gradient(to right, var(--primary), var(--primary-light));
+            color: white;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.2, 0, 0, 1);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .add-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .add-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 10px rgba(99, 102, 241, 0.4);
+        }
+
+        .todo-list {
+            list-style: none;
+            max-height: 400px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary) transparent;
+            padding-right: 0.5rem; /* Make space for scrollbar */
+            /* Needed for empty state positioning */
+            position: relative; 
+            min-height: 100px; /* Give space for empty state */
+        }
+        
+        .todo-list .empty-state {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            padding: 1.5rem;
+            color: var(--text-light);
+            width: 100%; /* Ensure it takes width */
+        }
+
+
+        .todo-list::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .todo-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .todo-list::-webkit-scrollbar-thumb {
+            background-color: var(--primary);
+            border-radius: 4px;
+        }
+
+        .todo-item {
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            border-radius: 0.75rem;
+            background: rgba(255, 255, 255, 0.5);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: all 0.4s cubic-bezier(0.2, 0, 0, 1), height 0.3s ease, padding 0.3s ease, margin 0.3s ease; /* Added transitions for delete */
+            animation: todoIn 0.6s cubic-bezier(0.2, 0, 0, 1) both;
+            transform-origin: top;
+             overflow: hidden; /* Prevent content spill during animation */
+        }
+
+        .dark-mode .todo-item {
+            background: rgba(15, 23, 42, 0.5);
+        }
+
+        .todo-item.completed {
+            opacity: 0.7;
+            /* transform: translateX(10px); /* Let CSS animation handle this */
+        }
+
+        .todo-item.completed .todo-text {
+            text-decoration: line-through;
+        }
+
+        .todo-checkbox {
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--primary);
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .todo-checkbox:checked {
+            background: var(--primary);
+        }
+
+        .todo-checkbox:checked::after {
+            content: "✓";
+            position: absolute;
+            color: white;
+            font-size: 12px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .todo-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            min-width: 0; /* Prevent flex item from overflowing */
+        }
+
+        .todo-text {
+            word-break: break-word;
+            transition: all 0.3s ease;
+        }
+
+        .todo-meta {
+            display: flex;
+            flex-wrap: wrap; /* Allow wrapping on small screens */
+            gap: 0.75rem;
+            font-size: 0.75rem;
+            color: var(--text-light);
+        }
+
+        .todo-category {
+            background: rgba(203, 213, 225, 0.3);
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.7rem;
+            white-space: nowrap; /* Prevent category name from breaking */
+        }
+
+        .todo-due {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .todo-actions {
+            display: flex;
+            gap: 0.5rem;
+            opacity: 0;
+            transition: all 0.3s ease;
+            /* Ensure buttons don't cause overflow when appearing */
+            flex-shrink: 0; 
+        }
+
+        .todo-item:hover .todo-actions,
+        .todo-item:focus-within .todo-actions /* Show on focus too */
+        {
+            opacity: 1;
+        }
+
+        .todo-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(203, 213, 225, 0.3);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .todo-btn:hover {
+            background: var(--primary);
+            color: white;
+            transform: rotate(15deg) scale(1.1);
+        }
+
+        .todo-btn.delete:hover {
+            background: var(--error);
+            transform: rotate(-5deg) scale(1.1);
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1.5rem;
+            animation: fadeInUp 0.8s 1s cubic-bezier(0.2, 0, 0, 1) both;
+        }
+
+        .filter-btn {
+            flex: 1;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            border: none;
+            background: rgba(203, 213, 225, 0.3);
+            color: var(--text);
+            font-family: inherit;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn:hover {
+            background: rgba(203, 213, 225, 0.5);
+        }
+
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* 番茄钟页面 */
+        .pomodoro-container {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 1.25rem;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 1.5rem;
+            text-align: center;
+            animation: fadeInUp 0.8s 0.4s cubic-bezier(0.2, 0, 0, 1) forwards;
+        }
+        
+        .pomodoro-container h2 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+        }
+
+        .pomodoro-timer {
+            font-size: 4rem;
+            font-weight: 700;
+            margin: 1rem 0;
+            color: var(--primary);
+            font-feature-settings: "tnum"; /* Tabular numbers for timer */
+            letter-spacing: -0.05em;
+        }
+
+        .pomodoro-controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .pomodoro-btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            border: none;
+            background: var(--primary);
+            color: white;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .pomodoro-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+
+        .pomodoro-btn:not(:disabled):hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .pomodoro-btn:not(:disabled):active {
+            transform: translateY(0);
+        }
+
+        .pomodoro-btn.secondary {
+            background: rgba(203, 213, 225, 0.3);
+            color: var(--text);
+        }
+        
+        .dark-mode .pomodoro-btn.secondary {
+             background: rgba(51, 65, 85, 0.6); /* Adjust secondary btn color in dark mode */
+        }
+
+        .pomodoro-settings {
+            margin-top: 1.5rem;
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+        }
+
+        .pomodoro-setting {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .pomodoro-setting label {
+            font-size: 0.875rem;
+            color: var(--text-light);
+            margin-bottom: 0.5rem;
+        }
+
+        .pomodoro-setting input {
+            width: 60px;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border);
+            background: rgba(255, 255, 255, 0.5);
+            color: var(--text);
+            text-align: center;
+            font-family: inherit;
+        }
+        
+        .pomodoro-setting input:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .dark-mode .pomodoro-setting input {
+            background: rgba(15, 23, 42, 0.5);
+        }
+
+        /* About Page */
+        .about-container {
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--border);
+            border-radius: 1.25rem;
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 1.5rem;
+            animation: fadeInUp 0.8s 0.4s cubic-bezier(0.2, 0, 0, 1) forwards;
+        }
+
+        .about-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .about-text {
+            line-height: 1.6;
+            margin-bottom: 1rem;
+            color: var(--text-light);
+        }
+        
+        .about-text strong {
+             color: var(--text);
+             font-weight: 600;
+        }
+
+        .theme-selector {
+            margin-top: 2rem;
+        }
+
+        .theme-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .theme-colors {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(50px, 1fr)); /* Responsive grid */
+            gap: 0.75rem;
+        }
+
+        .theme-color {
+            width: 100%;
+            aspect-ratio: 1;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 3px solid transparent; /* Increased border visibility */
+            box-shadow: var(--shadow); /* Add shadow for better visibility */
+        }
+
+        .theme-color:hover {
+            transform: translateY(-3px) scale(1.05);
+             box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .theme-color.selected {
+            border-color: var(--text);
+            transform: scale(1.1);
+             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        /* Responsive Design Adjustments */
+        @media (max-width: 640px) {
+            .stats {
+                flex-direction: column;
+            }
+
+            .input-group {
+                flex-direction: column;
+            }
+
+            .add-btn {
+                width: 100%;
+                justify-content: center;
+                padding: 0.875rem; /* Ensure consistent padding */
+            }
+
+            .filter-buttons {
+                flex-direction: column;
+            }
+
+            .pomodoro-timer {
+                font-size: 3rem;
+            }
+
+            .pomodoro-controls {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .pomodoro-btn {
+                width: 100%;
+                max-width: 250px; /* Slightly larger max-width */
+            }
+
+            .pomodoro-settings {
+                flex-direction: column;
+                align-items: center;
+                gap: 1.5rem; /* Increase gap for vertical layout */
+            }
+            
+             .todo-item {
+                padding: 0.875rem; /* Adjust padding */
+                gap: 0.75rem;
+            }
+             .todo-actions {
+                /* Ensure actions are always visible on touch devices if needed */
+                /* opacity: 1; */ 
+                gap: 0.25rem;
+            }
+            .todo-btn {
+                width: 30px;
+                height: 30px;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes statPopIn { 0% { opacity: 0; transform: translateY(10px) scale(0.9); } 60% { opacity: 1; transform: translateY(-5px) scale(1.05); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes todoIn { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        @keyframes todoComplete { 0% { opacity: 1; transform: translateX(0); } 100% { opacity: 0.7; transform: translateX(10px); } }
+        @keyframes todoUncomplete { 0% { opacity: 0.7; transform: translateX(10px); } 100% { opacity: 1; transform: translateX(0); } }
+        /* Delete animation */
+        @keyframes todoOut { to { opacity: 0; transform: translateX(-100%) scale(0.8); height: 0; padding-top: 0; padding-bottom: 0; margin-bottom: 0; border-width: 0; } }
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="app-header">
+            <h1 class="app-title">极简Todo Pro</h1>
+            <div class="nav-tabs">
+                <button class="nav-tab active" data-tab="todo">待办</button>
+                <button class="nav-tab" data-tab="pomodoro">番茄钟</button>
+                <button class="nav-tab" data-tab="about">关于</button>
+            </div>
+        </header>
+
+        <!-- Todo页面 -->
+        <div class="content-area active" id="todo-content">
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value" id="totalCount">0</div>
+                    <div class="stat-label">全部任务</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="completedCount">0</div>
+                    <div class="stat-label">已完成</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="pendingCount">0</div>
+                    <div class="stat-label">待完成</div>
+                </div>
+            </div>
+
+            <div class="todo-container">
+                <div class="input-group">
+                    <input type="text" id="todoInput" placeholder="添加一个新任务..." aria-label="新任务内容">
+                    <select id="categorySelect" aria-label="任务分类">
+                        <option value="工作">工作</option>
+                        <option value="学习">学习</option>
+                        <option value="生活">生活</option>
+                        <option value="娱乐">娱乐</option>
+                    </select>
+                    <input type="time" id="dueTimeInput" aria-label="任务截止时间">
+                    <button class="add-btn" id="addBtn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <line x1="12" y1="5" x2="12" y2="19"></line>
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                        添加
+                    </button>
+                </div>
+
+                <ul class="todo-list" id="todoList" aria-live="polite">
+                    <!-- 任务将在这里动态添加 -->
+                     <li class="empty-state" style="display: none;">暂无任务</li> 
+                </ul>
+
+                <div class="filter-buttons" role="group" aria-label="筛选任务">
+                    <button class="filter-btn active" data-filter="all">全部</button>
+                    <button class="filter-btn" data-filter="active">待完成</button>
+                    <button class="filter-btn" data-filter="completed">已完成</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 番茄钟页面 -->
+        <div class="content-area" id="pomodoro-content">
+            <div class="pomodoro-container">
+                <h2>番茄钟</h2>
+                <div class="pomodoro-timer" id="pomodoroTimer" aria-live="off">25:00</div>
+                <div class="pomodoro-controls">
+                    <button class="pomodoro-btn" id="startPomodoro">开始</button>
+                    <button class="pomodoro-btn secondary" id="pausePomodoro" disabled>暂停</button>
+                    <button class="pomodoro-btn secondary" id="resetPomodoro">重置</button>
+                </div>
+                <div class="pomodoro-settings">
+                    <div class="pomodoro-setting">
+                        <label for="workDuration">工作 (分钟)</label>
+                        <input type="number" id="workDuration" min="1" max="120" value="25" aria-label="设置工作时长">
+                    </div>
+                    <div class="pomodoro-setting">
+                        <label for="breakDuration">休息 (分钟)</label>
+                        <input type="number" id="breakDuration" min="1" max="60" value="5" aria-label="设置休息时长">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 关于页面 -->
+        <div class="content-area" id="about-content">
+            <div class="about-container">
+                <h2 class="about-title">关于 极简Todo Pro</h2>
+                <p class="about-text">
+                    <strong>极简Todo Pro</strong> 是一个集成了任务管理、番茄工作法和智能提醒的轻量级生产力工具。
+                    致力于提供简洁的设计和流畅的体验，帮助您更高效地管理时间和任务。
+                </p>
+                <p class="about-text">
+                    版本: 1.1.0 (PWA & Notifications Update)<br>
+                    开发者: 吃葡萄不吐柚子皮
+                </p>
+
+                <div class="theme-selector">
+                    <h3 class="theme-title">选择主题颜色</h3>
+                    <div class="theme-colors" id="themeColors">
+                        <!-- 莫奈色主题将在这里动态添加 -->
+                    </div>
+                </div>
+
+                <button class="pomodoro-btn" id="requestNotificationBtn" style="margin-top: 1.5rem;">
+                    启用通知权限
+                </button>
+
+                <button class="pomodoro-btn secondary" id="toggleDarkMode" style="margin-top: 1rem;">
+                    切换深色/浅色模式
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // === DOM Elements ===
+        const todoInput = document.getElementById('todoInput');
+        const addBtn = document.getElementById('addBtn');
+        const todoList = document.getElementById('todoList');
+        const totalCountEl = document.getElementById('totalCount');
+        const completedCountEl = document.getElementById('completedCount');
+        const pendingCountEl = document.getElementById('pendingCount');
+        const filterButtons = document.querySelectorAll('.filter-btn');
+        const categorySelect = document.getElementById('categorySelect');
+        const dueTimeInput = document.getElementById('dueTimeInput');
+        const navTabs = document.querySelectorAll('.nav-tab');
+        const contentAreas = document.querySelectorAll('.content-area');
+        const emptyStateLi = document.querySelector('.empty-state');
+
+        // Pomodoro Elements
+        const pomodoroTimer = document.getElementById('pomodoroTimer');
+        const startPomodoroBtn = document.getElementById('startPomodoro');
+        const pausePomodoroBtn = document.getElementById('pausePomodoro');
+        const resetPomodoroBtn = document.getElementById('resetPomodoro');
+        const workDurationInput = document.getElementById('workDuration');
+        const breakDurationInput = document.getElementById('breakDuration');
+
+        // About Page Elements
+        const themeColorsContainer = document.getElementById('themeColors');
+        const requestNotificationBtn = document.getElementById('requestNotificationBtn');
+        const toggleDarkModeBtn = document.getElementById('toggleDarkMode');
+
+        // === State ===
+        let todos = []; // Initialize empty, load from storage in init
+        let currentFilter = 'all';
+        let pomodoroInterval;
+        let pomodoroTimeLeft = parseInt(workDurationInput.value) * 60;
+        let pomodoroIsRunning = false;
+        let pomodoroIsWorkTime = true;
+        let notificationPermission = 'default'; // Initialize, check later
+        let permissionRequestedThisSession = false; // Flag for proactive request
+        let reminderTimeouts = {}; // Store reminder timeouts by ID
+
+        // === Monet Colors ===
+        const monetColors = [
+            { name: '经典蓝', value: '#6366f1', light: '#818cf8', dark: '#4f46e5' },
+            { name: '薰衣草', value: '#8b5cf6', light: '#a78bfa', dark: '#7c3aed' },
+            { name: '玫瑰粉', value: '#ec4899', light: '#f472b6', dark: '#db2777' },
+            { name: '珊瑚橙', value: '#f97316', light: '#fb923c', dark: '#ea580c' },
+            { name: '薄荷绿', value: '#10b981', light: '#34d399', dark: '#059669' },
+            { name: '青柠黄', value: '#84cc16', light: '#a3e635', dark: '#65a30d' },
+            { name: '天空蓝', value: '#0ea5e9', light: '#38bdf8', dark: '#0284c7' },
+            { name: '紫水晶', value: '#a855f7', light: '#c084fc', dark: '#9333ea' }
+        ];
+
+        // === Initialization ===
+        function init() {
+            // Load Todos from Local Storage
+            todos = JSON.parse(localStorage.getItem('todos')) || [];
+            
+             // Fix potential loading issue where reminderTimeout is stored as string/object
+             todos.forEach(todo => {
+                delete todo.reminderTimeout; // Clear any stale timeout references from storage
+             });
+             saveTodos(); // Save cleaned todos back
+
+            renderTodos();
+            updateStats();
+            renderThemeColors();
+            setupPomodoro();
+            checkDarkMode();
+            registerServiceWorker(); // Register PWA Service Worker
+
+            // Check initial Notification permission
+            if ('Notification' in window) {
+                notificationPermission = Notification.permission;
+                updateNotificationButton();
+            } else {
+                 requestNotificationBtn.textContent = '浏览器不支持通知';
+                 requestNotificationBtn.disabled = true;
+                 console.warn('Notifications not supported in this browser.');
+            }
+
+            // Load theme color from storage
+            const savedColor = localStorage.getItem('primaryColor');
+            const savedLight = localStorage.getItem('primaryLight');
+            const savedDark = localStorage.getItem('primaryDark');
+            const defaultColor = monetColors[0]; // Fallback to first color
+
+            if (savedColor && savedLight && savedDark) {
+                setPrimaryColor(savedColor, savedLight, savedDark);
+            } else {
+                 setPrimaryColor(defaultColor.value, defaultColor.light, defaultColor.dark); // Apply default if nothing saved
+            }
+            
+            // Re-schedule reminders for existing todos on load
+            todos.forEach(setReminder);
+        }
+
+        // === Service Worker registration ===
+        function registerServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('sw.js') // Path relative to root
+                        .then(registration => {
+                            console.log('ServiceWorker registered: ', registration.scope);
+                        })
+                        .catch(error => {
+                            console.error('ServiceWorker registration failed: ', error);
+                        });
+                });
+            } else {
+                 console.warn('ServiceWorker not supported in this browser. PWA features limited.');
+            }
+        }
+
+
+        // === Todo Functions ===
+        function addTodo() {
+            const text = todoInput.value.trim();
+            const category = categorySelect.value;
+            const dueTime = dueTimeInput.value;
+
+            if (text) {
+                const newTodo = {
+                    id: Date.now(),
+                    text,
+                    category,
+                    dueTime,
+                    completed: false,
+                    createdAt: new Date().toISOString()
+                };
+
+                todos.unshift(newTodo);
+                saveTodos();
+                const newItem = renderSingleTodo(newTodo); // Render just the new one
+                if (newItem) {
+                    todoList.insertBefore(newItem, todoList.firstChild); // Add to top
+                    animateTodoIn(newItem);
+                } else {
+                    renderTodos(); // Fallback to full render if single fails
+                }
+                updateStats();
+                todoInput.value = '';
+                dueTimeInput.value = '';
+                todoInput.focus(); // Keep focus in input
+
+                // Set reminder for the new todo
+                setReminder(newTodo);
+
+                // **Proactive Notification Request**
+                if (!permissionRequestedThisSession && 'Notification' in window && Notification.permission === 'default') {
+                    console.log("Attempting proactive notification permission request...");
+                    // Optional short delay to avoid jarring the user immediately
+                    setTimeout(() => {
+                        requestNotificationPermission();
+                    }, 1500); // 1.5 second delay
+                    permissionRequestedThisSession = true; // Only ask once per session proactively
+                }
+
+            } else {
+                // Optional: Add feedback if input is empty
+                todoInput.style.borderColor = 'var(--error)';
+                setTimeout(() => { todoInput.style.borderColor = ''; }, 1000);
+            }
+        }
+        
+         // Helper to render a single todo item (for efficiency on add)
+        function renderSingleTodo(todo) {
+            const todoItem = document.createElement('li');
+            todoItem.className = `todo-item ${todo.completed ? 'completed' : ''}`;
+            todoItem.dataset.id = todo.id;
+
+            let formattedTime = '';
+            if (todo.dueTime) {
+                try {
+                    // Use a fake date to parse time correctly across browsers
+                    const tempDate = new Date(`1970-01-01T${todo.dueTime}`);
+                    if (!isNaN(tempDate)) {
+                        formattedTime = tempDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    } else {
+                         console.warn("Invalid due time format:", todo.dueTime);
+                    }
+                } catch (e) {
+                    console.error("Error formatting time:", e);
+                }
+            }
+
+            todoItem.innerHTML = `
+                <input type="checkbox" class="todo-checkbox" ${todo.completed ? 'checked' : ''} aria-labelledby="todo-text-${todo.id}">
+                <div class="todo-content">
+                    <span class="todo-text" id="todo-text-${todo.id}">${escapeHTML(todo.text)}</span>
+                    <div class="todo-meta">
+                        <span class="todo-category">${escapeHTML(todo.category)}</span>
+                        ${formattedTime ? `<span class="todo-due">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <polyline points="12 6 12 12 16 14"></polyline>
+                            </svg>
+                            ${formattedTime}
+                        </span>` : ''}
+                    </div>
+                </div>
+                <div class="todo-actions">
+                    <button class="todo-btn edit" aria-label="编辑任务 ${escapeHTML(todo.text)}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                    </button>
+                    <button class="todo-btn delete" aria-label="删除任务 ${escapeHTML(todo.text)}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                </div>
+            `;
+
+            // Add event listeners to the new item
+            attachTodoListeners(todoItem, todo);
+            return todoItem;
+        }
+
+
+        function renderTodos() {
+            todoList.innerHTML = ''; // Clear current list
+
+            const filteredTodos = todos.filter(todo => {
+                if (currentFilter === 'all') return true;
+                if (currentFilter === 'active') return !todo.completed;
+                if (currentFilter === 'completed') return todo.completed;
+                return true;
+            });
+
+            if (filteredTodos.length === 0) {
+                 emptyStateLi.textContent = currentFilter === 'all' ? '暂无任务，添加一个吧！' :
+                                           currentFilter === 'active' ? '太棒了！没有待办任务' :
+                                           '还没有已完成的任务';
+                 emptyStateLi.style.display = 'block';
+            } else {
+                emptyStateLi.style.display = 'none';
+                filteredTodos.forEach(todo => {
+                     const todoItem = renderSingleTodo(todo);
+                     if (todoItem) {
+                         todoList.appendChild(todoItem);
+                     }
+                });
+            }
+        }
+        
+        // Helper to attach listeners, used by both renderSingleTodo and renderTodos
+        function attachTodoListeners(todoItem, todo) {
+            const checkbox = todoItem.querySelector('.todo-checkbox');
+            const editBtn = todoItem.querySelector('.edit');
+            const deleteBtn = todoItem.querySelector('.delete');
+
+            if (checkbox) checkbox.addEventListener('change', () => toggleTodoComplete(todo.id));
+            if (editBtn) editBtn.addEventListener('click', () => editTodo(todo.id));
+            if (deleteBtn) deleteBtn.addEventListener('click', () => deleteTodo(todo.id));
+        }
+
+        function toggleTodoComplete(id) {
+            const todo = todos.find(t => t.id === id);
+            if (!todo) return;
+
+            todo.completed = !todo.completed;
+            
+            // Manage reminder based on completion status
+            if (todo.completed) {
+                cancelReminder(todo.id); // Cancel reminder if marked complete
+            } else {
+                setReminder(todo); // Re-set reminder if marked incomplete
+            }
+            
+            saveTodos();
+            updateStats();
+
+            const todoItem = todoList.querySelector(`.todo-item[data-id="${id}"]`);
+            if (todoItem) {
+                if (todo.completed) {
+                    todoItem.classList.add('completed');
+                    todoItem.style.animation = 'todoComplete 0.4s ease-out forwards';
+                } else {
+                    todoItem.classList.remove('completed');
+                     todoItem.style.animation = 'todoUncomplete 0.4s ease-out forwards';
+                }
+
+                // If filtering is active, remove the item after animation completes
+                setTimeout(() => {
+                    if ((currentFilter === 'active' && todo.completed) || (currentFilter === 'completed' && !todo.completed)) {
+                         // Add a fade-out before removing if needed, or just remove
+                         todoItem.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+                         todoItem.style.opacity = '0';
+                         todoItem.style.transform = 'scale(0.9)';
+                         setTimeout(() => {
+                            renderTodos(); // Re-render the list based on filter
+                         }, 300);
+                    } else {
+                        // Clear animation style to allow future animations
+                         todoItem.style.animation = '';
+                    }
+                }, 400); // Match animation duration
+            }
+        }
+
+        function editTodo(id) {
+             const todo = todos.find(t => t.id === id);
+             if (!todo) return;
+
+             const todoItem = todoList.querySelector(`.todo-item[data-id="${id}"]`);
+             if (!todoItem) return;
+
+             const todoContentDiv = todoItem.querySelector('.todo-content');
+             const todoActionsDiv = todoItem.querySelector('.todo-actions');
+             const checkbox = todoItem.querySelector('.todo-checkbox');
+             
+             // Temporarily hide actions and checkbox during edit
+             if (todoActionsDiv) todoActionsDiv.style.display = 'none';
+             if (checkbox) checkbox.style.display = 'none';
+
+             const currentText = todo.text;
+             const currentCategory = todo.category;
+             const currentDueTime = todo.dueTime || '';
+
+             const form = document.createElement('div');
+             form.className = 'edit-form';
+             form.style.flex = '1';
+             form.style.display = 'flex';
+             form.style.flexDirection = 'column';
+             form.style.gap = '0.5rem';
+             form.style.padding = '0.25rem 0'; // Add some padding
+
+             const input = document.createElement('input');
+             input.type = 'text';
+             input.value = currentText;
+             input.className = 'edit-input'; // Add class for styling if needed
+             input.style.padding = '0.6rem 0.8rem';
+             input.style.borderRadius = '0.5rem';
+             input.style.border = '1px solid var(--primary)'; // Highlight edit input
+             input.style.background = 'var(--card-bg)';
+             input.style.fontFamily = 'inherit';
+             input.style.fontSize = 'inherit';
+             input.style.width = '100%'; // Take full width
+
+             const metaRow = document.createElement('div');
+             metaRow.style.display = 'flex';
+             metaRow.style.gap = '0.5rem';
+
+             const categorySelectLocal = document.createElement('select');
+              // Populate options dynamically from existing select to ensure consistency
+             Array.from(categorySelect.options).forEach(option => {
+                 categorySelectLocal.add(new Option(option.text, option.value));
+             });
+             categorySelectLocal.value = currentCategory;
+             categorySelectLocal.style.flex = '1';
+             categorySelectLocal.style.padding = '0.4rem 0.6rem';
+             categorySelectLocal.style.borderRadius = '0.5rem';
+             categorySelectLocal.style.border = '1px solid var(--border)';
+             categorySelectLocal.style.background = 'inherit'; // Match parent bg
+             categorySelectLocal.style.fontFamily = 'inherit';
+             categorySelectLocal.style.fontSize = '0.8rem';
+
+             const timeInput = document.createElement('input');
+             timeInput.type = 'time';
+             timeInput.value = currentDueTime;
+             timeInput.style.flex = '1';
+             timeInput.style.padding = '0.4rem 0.6rem';
+             timeInput.style.borderRadius = '0.5rem';
+             timeInput.style.border = '1px solid var(--border)';
+             timeInput.style.background = 'inherit';
+             timeInput.style.fontFamily = 'inherit';
+             timeInput.style.fontSize = '0.8rem';
+
+             metaRow.appendChild(categorySelectLocal);
+             metaRow.appendChild(timeInput);
+
+             form.appendChild(input);
+             form.appendChild(metaRow);
+
+              // Replace original content with the form
+             todoContentDiv.replaceWith(form);
+             input.focus();
+             input.select(); // Select text for easy editing
+
+             const saveEdit = () => {
+                 const newText = input.value.trim();
+                 const newCategory = categorySelectLocal.value;
+                 const newDueTime = timeInput.value;
+
+                 // Restore original view first
+                 form.replaceWith(todoContentDiv);
+                 if (todoActionsDiv) todoActionsDiv.style.display = ''; // Restore display
+                 if (checkbox) checkbox.style.display = '';
+
+                 if (newText && (newText !== currentText || newCategory !== currentCategory || newDueTime !== currentDueTime)) {
+                     todo.text = newText;
+                     todo.category = newCategory;
+                     todo.dueTime = newDueTime;
+                     
+                     // Update reminder status
+                     cancelReminder(todo.id); // Always cancel old one first
+                     setReminder(todo); // Set new one if applicable
+
+                     saveTodos();
+                     renderTodos(); // Re-render to reflect changes potentially affecting order or display
+                     console.log("Todo updated:", todo.id);
+                 } else if (!newText){
+                    console.log("Edit cancelled: Text cannot be empty. Reverting.");
+                    renderTodos(); // Revert if text is empty
+                 } else {
+                     console.log("Edit cancelled: No changes made.");
+                     // No need to re-render if nothing changed, original view is restored
+                 }
+                 
+                 // Remove listeners specific to edit mode
+                 input.removeEventListener('blur', handleBlur);
+                 input.removeEventListener('keypress', handleKeyPress);
+                 categorySelectLocal.removeEventListener('change', handleBlur); // Save on category change too? Maybe too aggressive.
+             };
+
+             const handleBlur = (e) => {
+                  // Use relatedTarget to check if focus moved within the form
+                  if (!form.contains(e.relatedTarget)) {
+                      saveEdit();
+                  }
+             };
+
+             const handleKeyPress = (e) => {
+                 if (e.key === 'Enter') {
+                     e.preventDefault(); // Prevent form submission if it were a real form
+                     input.blur(); // Trigger blur to save
+                 } else if (e.key === 'Escape') {
+                      // Cancel edit - revert without saving
+                      form.replaceWith(todoContentDiv);
+                      if (todoActionsDiv) todoActionsDiv.style.display = '';
+                      if (checkbox) checkbox.style.display = '';
+                      console.log("Edit cancelled by Escape key.");
+                      input.removeEventListener('blur', handleBlur);
+                      input.removeEventListener('keypress', handleKeyPress);
+                 }
+             };
+
+
+             input.addEventListener('blur', handleBlur);
+             input.addEventListener('keypress', handleKeyPress);
+             // Add blur listeners to selects/time too, to save if user interacts with them and then clicks away
+             timeInput.addEventListener('blur', handleBlur);
+             categorySelectLocal.addEventListener('blur', handleBlur);
+
+        }
+
+        function deleteTodo(id) {
+            const todoItem = todoList.querySelector(`.todo-item[data-id="${id}"]`);
+            if (todoItem) {
+                // Apply delete animation
+                todoItem.style.animation = 'todoOut 0.4s ease-out forwards';
+
+                // Cancel any pending reminder
+                cancelReminder(id);
+
+                // Remove from array and UI after animation
+                setTimeout(() => {
+                    todos = todos.filter(todo => todo.id !== id);
+                    saveTodos();
+                    // todoItem.remove(); // Remove directly instead of full re-render for smoother visual
+                    renderTodos(); // Re-render might be safer if order matters or filters change
+                    updateStats();
+                }, 400); // Match animation duration
+            } else {
+                 // Fallback if item not found in UI (e.g., during rapid actions)
+                 todos = todos.filter(todo => todo.id !== id);
+                 saveTodos();
+                 renderTodos();
+                 updateStats();
+            }
+        }
+
+        // === Stats Update ===
+        function updateStats() {
+             const total = todos.length;
+             const completed = todos.filter(todo => todo.completed).length;
+             const pending = total - completed;
+
+             animateCount(totalCountEl, total);
+             animateCount(completedCountEl, completed);
+             animateCount(pendingCountEl, pending);
+
+              // Update empty state visibility based on filtered list count after stats update
+             setTimeout(renderTodos, 0); // Schedule render after stats have settled
+        }
+
+        function animateCount(element, target) {
+            const current = parseInt(element.textContent) || 0;
+            if (current === target) return;
+
+            const duration = 500; // ms
+            const stepTime = 20; // ms per step
+            const steps = duration / stepTime;
+            const increment = (target - current) / steps;
+            let currentStep = 0;
+
+            const step = () => {
+                currentStep++;
+                const newValue = Math.round(current + increment * currentStep);
+
+                if ((increment > 0 && newValue >= target) || (increment < 0 && newValue <= target) || currentStep >= steps) {
+                    element.textContent = target; // Ensure final value is exact
+                } else {
+                    element.textContent = newValue;
+                    requestAnimationFrame(step);
+                }
+            };
+            requestAnimationFrame(step);
+        }
+
+        // === Local Storage ===
+        function saveTodos() {
+             // Avoid storing transient state like timeout IDs
+             const todosToSave = todos.map(({ reminderTimeout, ...rest }) => rest);
+             localStorage.setItem('todos', JSON.stringify(todosToSave));
+        }
+
+        // === Filtering ===
+        function setFilter(filter) {
+            if (currentFilter === filter) return; // No change
+
+            currentFilter = filter;
+            filterButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.filter === filter);
+            });
+            renderTodos(); // Re-render list with the new filter
+        }
+
+        // === Reminders and Notifications ===
+        function setReminder(todo) {
+            // Clear existing reminder for this todo first
+             cancelReminder(todo.id);
+
+             if (!todo.dueTime || todo.completed || !('Notification' in window)) return;
+
+             try {
+                const now = new Date();
+                const [hours, minutes] = todo.dueTime.split(':').map(Number);
+                
+                // Check if hours/minutes are valid
+                if (isNaN(hours) || isNaN(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+                     console.warn(`Invalid due time format for todo ${todo.id}: ${todo.dueTime}`);
+                     return;
+                }
+
+                const reminderDateTime = new Date(now);
+                reminderDateTime.setHours(hours, minutes, 0, 0); // Set time for today
+
+                // If the time has already passed today, schedule it for tomorrow
+                if (reminderDateTime <= now) {
+                    reminderDateTime.setDate(reminderDateTime.getDate() + 1);
+                }
+
+                const timeUntilReminder = reminderDateTime.getTime() - now.getTime();
+
+                // Schedule only if it's in the future and reasonably soon (e.g., within a few days)
+                // Avoid scheduling extremely far-future events which might be error-prone
+                if (timeUntilReminder > 0 && timeUntilReminder < 7 * 24 * 60 * 60 * 1000) { // Max 7 days ahead
+                    const timeoutId = setTimeout(() => {
+                        showReminderNotification(todo);
+                        // Clean up reference after firing
+                         delete reminderTimeouts[todo.id];
+                         renderTodos(); // Re-render might be needed if UI shows reminder status
+                    }, timeUntilReminder);
+                    
+                    // Store the timeout ID associated with the todo ID
+                    reminderTimeouts[todo.id] = timeoutId;
+                    
+                    console.log(`Reminder set for todo ${todo.id} at ${reminderDateTime.toLocaleTimeString()}`);
+
+                } else if (timeUntilReminder <= 0) {
+                    console.log(`Reminder time for todo ${todo.id} is in the past, not scheduling.`);
+                }
+
+             } catch (error) {
+                  console.error(`Error setting reminder for todo ${todo.id}:`, error);
+             }
+        }
+
+        function cancelReminder(id) {
+             if (reminderTimeouts[id]) {
+                 clearTimeout(reminderTimeouts[id]);
+                 delete reminderTimeouts[id]; // Remove from our tracking object
+                 console.log(`Reminder cancelled for todo ${id}`);
+             }
+        }
+
+        function showReminderNotification(todo) {
+             if (!('Notification' in window)) return;
+
+             if (Notification.permission === 'granted') {
+                 const notificationTitle = `任务 "${todo.text}" 到期提醒`;
+                 const notificationOptions = {
+                     body: `分类: ${todo.category}\n设定时间: ${todo.dueTime}`,
+                     icon: 'icons/icon-192x192.png', // Use one of your PWA icons
+                     tag: `todo-${todo.id}` // Use tag to prevent duplicate notifications if triggered multiple times
+                     // requireInteraction: true, // Keep notification visible until user interacts
+                 };
+
+                 navigator.serviceWorker.ready.then(registration => {
+                     registration.showNotification(notificationTitle, notificationOptions);
+                 }).catch(err => {
+                      console.error("Service Worker not ready for notification:", err);
+                      // Fallback to basic notification if SW fails
+                      new Notification(notificationTitle, notificationOptions);
+                 });
+
+
+                 console.log(`Showing reminder for todo ${todo.id}`);
+                 playNotificationSound(); // Play sound
+
+             } else {
+                 console.warn(`Notification permission not granted. Cannot show reminder for todo ${todo.id}`);
+                  // Optionally provide in-app feedback that reminder was missed due to permissions
+             }
+
+             // Clean up timeout reference just in case (should have been done by caller)
+             delete reminderTimeouts[todo.id];
+        }
+
+        function playNotificationSound() {
+            try {
+                // Use a subtle, short sound
+                const audio = new Audio('data:audio/mpeg;base64,SUQzBAAAAAAAI noncommutative="1" TPE1 TALB TRCK TCON TDRL TDRC PRIV QAAAAr0tAQABAQAAAAYAAAA/AhxmSgAAABpIAAAG8AAAFoAB8/soMAAEQBgAAAZgA4AC3ODQhS0jjp0v9X0F3wKVew+K/+UAG4ADGAHFA/6pACUAhgAdQBhAHEAKgBEADGABLACWAAVACRAD5AEqAC2AKUA0wA7QClAMUAQwA/wAxgDVANYBJwBdwChAN/9ZAD/9pQCb/9FAAP//BwP8+QE4///gAn/+YAo//7EF///3A///8QBwAAAEQDADAEsAYQAwABDAEkAQwCBAAsAP8AMMAGwAAABJABMwBTAADAAAAPwBxAFEAQwA3ADrADMAQQA7///MB/3/pARP//wAQCgAgBLAB1ABKAAEAOgBCAEEABgBHAEoAFADBAEQAPwAyACgAIwANABwAIgAIAAQABwBCAAkAAQAHAAMAEgAPAAwABgAGAAAA/gH9AfwB/QH8Af0B/AH9AfwB/QH8Af0B/AH9AfwB/QH8Af0B/AH9AfwB/QH8Af0B/AH9AfwB/QEAAAwAQABSAEwAZQBnAEwAgQCZALIAmgCkAIQAhgCEAIEACQCGAA0AhgARAIQAGwCBACgAgQAxAIQAPgCEAEgAggBOAIEAVACBAFsAgwBgAIEAZQCEAGgAhQBzAIcAggCEAIMAAACGAAcAiwALAIsADQCKAA8AigASAJAAEgCQABEAigAeAIoAIgCMAIoAJgCaACgAqgApAPQAKgD8AC4ADgAuADIALgA3AAsAMgBLAAwASwBbAC4AWwBCAEIAcwBCAGsAQwBcADMAMwAAAAAZABkABwAZAAUA////AAgAYAAEACQACAACABkA////AAMABgAGAAAAAAAAAAAAAP8A/gH8AfwADAPkABEDkAARAJwA///oEf//wAP8+/7/////Af//+///Af//+QD///gAif//gBb//7MC///0AT//9AAAAAAA'); // Short beep sound
+                audio.play().catch(e => console.warn('Audio playback failed:', e));
+            } catch (e) {
+                console.warn('Could not play notification sound.', e);
+            }
+        }
+
+        // === Theme and Appearance ===
+        function renderThemeColors() {
+             themeColorsContainer.innerHTML = '';
+             const currentPrimary = getComputedStyle(document.documentElement).getPropertyValue('--primary').trim();
+
+             monetColors.forEach(color => {
+                 const colorEl = document.createElement('button'); // Use button for accessibility
+                 colorEl.className = 'theme-color';
+                 colorEl.style.backgroundColor = color.value;
+                 colorEl.title = `切换到 ${color.name} 主题`;
+                 colorEl.setAttribute('aria-label', `切换到 ${color.name} 主题`);
+
+                 if (color.value === currentPrimary) {
+                     colorEl.classList.add('selected');
+                     colorEl.setAttribute('aria-pressed', 'true');
+                 } else {
+                      colorEl.setAttribute('aria-pressed', 'false');
+                 }
+
+                 colorEl.addEventListener('click', () => {
+                     document.querySelectorAll('.theme-color').forEach(el => {
+                         el.classList.remove('selected');
+                         el.setAttribute('aria-pressed', 'false');
+                     });
+                     colorEl.classList.add('selected');
+                     colorEl.setAttribute('aria-pressed', 'true');
+                     setPrimaryColor(color.value, color.light, color.dark);
+                 });
+
+                 themeColorsContainer.appendChild(colorEl);
+             });
+        }
+
+        function setPrimaryColor(color, light, dark) {
+             const rootStyle = document.documentElement.style;
+             rootStyle.setProperty('--primary', color);
+             rootStyle.setProperty('--primary-light', light);
+             rootStyle.setProperty('--primary-dark', dark);
+
+             // Update PWA theme color meta tag dynamically
+             const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+             if (themeColorMeta) {
+                  themeColorMeta.setAttribute('content', color);
+             }
+
+             localStorage.setItem('primaryColor', color);
+             localStorage.setItem('primaryLight', light);
+             localStorage.setItem('primaryDark', dark);
+
+             // Re-render theme selector to update selection state if needed (though already handled by click)
+             // renderThemeColors(); // Usually not necessary here
+        }
+
+        function checkDarkMode() {
+            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+            // Default to system preference if no setting saved
+            const darkModeSaved = localStorage.getItem('darkMode');
+            let darkModeEnabled = false;
+
+            if (darkModeSaved === 'enabled') {
+                darkModeEnabled = true;
+            } else if (darkModeSaved === 'disabled') {
+                darkModeEnabled = false;
+            } else {
+                // No setting saved, use system preference
+                darkModeEnabled = prefersDark.matches;
+            }
+
+            document.documentElement.classList.toggle('dark-mode', darkModeEnabled);
+            updateDarkModeButtonText(darkModeEnabled);
+        }
+
+        function toggleDarkMode() {
+             const isDark = document.documentElement.classList.toggle('dark-mode');
+             localStorage.setItem('darkMode', isDark ? 'enabled' : 'disabled');
+             updateDarkModeButtonText(isDark);
+        }
+        
+         function updateDarkModeButtonText(isDark) {
+            toggleDarkModeBtn.textContent = isDark ? '切换浅色模式' : '切换深色模式';
+         }
+
+
+        // === Notification Permission Button ===
+        function updateNotificationButton() {
+            if (!('Notification' in window)) return; // Already handled in init
+
+            if (Notification.permission === 'granted') {
+                requestNotificationBtn.textContent = '通知已启用';
+                requestNotificationBtn.disabled = true;
+                 requestNotificationBtn.style.opacity = 0.7;
+            } else if (Notification.permission === 'denied') {
+                requestNotificationBtn.textContent = '通知被阻止';
+                requestNotificationBtn.disabled = true;
+                 requestNotificationBtn.style.opacity = 0.7;
+                 requestNotificationBtn.title = '请在浏览器设置中修改通知权限';
+            } else { // 'default'
+                requestNotificationBtn.textContent = '启用任务提醒通知';
+                requestNotificationBtn.disabled = false;
+                 requestNotificationBtn.style.opacity = 1;
+            }
+        }
+
+        function requestNotificationPermission() {
+             if (!('Notification' in window)) {
+                 alert('你的浏览器不支持桌面通知。');
+                 return;
+             }
+
+             if (Notification.permission === 'granted' || Notification.permission === 'denied') {
+                 console.log('Notification permission already set:', Notification.permission);
+                 return; // Don't ask if already granted or denied
+             }
+
+             Notification.requestPermission().then(permission => {
+                 console.log('Notification permission result:', permission);
+                 notificationPermission = permission; // Update state
+                 updateNotificationButton(); // Update button appearance
+
+                 if (permission === 'granted') {
+                     // Show a confirmation notification
+                     const successTitle = '通知已成功启用！';
+                     const successOptions = {
+                         body: '你将会在任务到期时收到提醒。',
+                         icon: 'icons/icon-192x192.png'
+                     };
+                      navigator.serviceWorker.ready.then(registration => {
+                           registration.showNotification(successTitle, successOptions);
+                      });
+                     
+                     // Re-evaluate reminders for existing todos now that permission is granted
+                     todos.forEach(setReminder);
+
+                 } else if (permission === 'denied') {
+                      // Optional: Explain how to enable manually if denied
+                      console.warn('Notification permission denied by user.');
+                 }
+             }).catch(err => {
+                  console.error('Error requesting notification permission:', err);
+             });
+        }
+
+        // === Pomodoro Timer ===
+        function setupPomodoro() {
+             resetPomodoro(); // Set initial state
+             updatePomodoroDisplay();
+
+             startPomodoroBtn.addEventListener('click', startPomodoro);
+             pausePomodoroBtn.addEventListener('click', pausePomodoro);
+             resetPomodoroBtn.addEventListener('click', resetPomodoro);
+
+             workDurationInput.addEventListener('change', handleDurationChange);
+             breakDurationInput.addEventListener('change', handleDurationChange);
+        }
+
+        function handleDurationChange() {
+             // Only update the timer if it's not currently running and it's the relevant phase
+             if (!pomodoroIsRunning) {
+                 if (pomodoroIsWorkTime) {
+                     pomodoroTimeLeft = parseInt(workDurationInput.value) * 60;
+                 } else {
+                      // If currently in break phase (but paused/reset), update break time
+                      // This edge case might not be common logic, often reset goes back to work time
+                      pomodoroTimeLeft = parseInt(breakDurationInput.value) * 60;
+                 }
+                 // Ensure time doesn't go below 0 if input is invalid temporarily
+                 pomodoroTimeLeft = Math.max(0, pomodoroTimeLeft); 
+                 updatePomodoroDisplay();
+             }
+        }
+
+         function updatePomodoroDisplay() {
+             const minutes = Math.floor(pomodoroTimeLeft / 60);
+             const seconds = pomodoroTimeLeft % 60;
+             const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+             pomodoroTimer.textContent = timeString;
+             document.title = `${timeString} - ${pomodoroIsWorkTime ? "工作" : "休息"} | 极简Todo Pro`; // Update page title
+             
+             // Make timer accessible by announcing changes infrequently
+             if (seconds % 15 === 0) { // Announce every 15 seconds
+                 pomodoroTimer.setAttribute('aria-live', 'polite');
+             } else {
+                 pomodoroTimer.setAttribute('aria-live', 'off');
+             }
+        }
+
+        function startPomodoro() {
+             if (pomodoroIsRunning) return;
+
+             pomodoroIsRunning = true;
+             startPomodoroBtn.disabled = true;
+             pausePomodoroBtn.disabled = false;
+             workDurationInput.disabled = true; // Disable inputs while running
+             breakDurationInput.disabled = true;
+             pomodoroTimer.setAttribute('aria-live', 'assertive'); // Announce start immediately
+
+
+             pomodoroInterval = setInterval(() => {
+                 pomodoroTimeLeft--;
+                 updatePomodoroDisplay();
+
+                 if (pomodoroTimeLeft <= 0) {
+                     clearInterval(pomodoroInterval);
+                     pomodoroIsRunning = false;
+                     pomodoroTimer.setAttribute('aria-live', 'assertive'); // Announce completion
+
+                     const completedPhase = pomodoroIsWorkTime ? '工作' : '休息';
+                     const nextPhase = !pomodoroIsWorkTime ? '工作' : '休息';
+                     const nextDuration = !pomodoroIsWorkTime ? workDurationInput.value : breakDurationInput.value;
+
+                     playPomodoroCompleteSound();
+
+                     // Show desktop notification if permission granted
+                     if (Notification.permission === 'granted') {
+                         const notificationTitle = `${completedPhase}时间结束！`;
+                         const notificationOptions = {
+                             body: `准备开始 ${nextDuration} 分钟的${nextPhase}吗？`,
+                             icon: 'icons/icon-192x192.png',
+                              tag: 'pomodoro-complete'
+                         };
+                          navigator.serviceWorker.ready.then(registration => {
+                              registration.showNotification(notificationTitle, notificationOptions);
+                          });
+                     }
+
+                     // Switch state for the next phase
+                     pomodoroIsWorkTime = !pomodoroIsWorkTime;
+                     pomodoroTimeLeft = parseInt(pomodoroIsWorkTime ? workDurationInput.value : breakDurationInput.value) * 60;
+                     updatePomodoroDisplay(); // Show timer for the next phase
+
+                     // Ask user to start the next phase manually or automatically?
+                     // Let's require manual start for more control
+                     startPomodoroBtn.disabled = false;
+                     pausePomodoroBtn.disabled = true;
+                     workDurationInput.disabled = false;
+                     breakDurationInput.disabled = false;
+                     alert(`${completedPhase}时间结束！点击“开始”进行下一阶段 (${nextPhase})。`); // Simple alert prompt
+                     document.title = "时间到! | 极简Todo Pro"; // Reset title
+                 }
+             }, 1000);
+        }
+
+        function pausePomodoro() {
+             if (!pomodoroIsRunning) return;
+
+             clearInterval(pomodoroInterval);
+             pomodoroIsRunning = false;
+             startPomodoroBtn.disabled = false;
+             pausePomodoroBtn.disabled = true;
+             // Keep inputs disabled during pause? Or enable? Let's keep disabled.
+             // workDurationInput.disabled = false;
+             // breakDurationInput.disabled = false;
+             document.title = `(暂停) ${pomodoroTimer.textContent} | 极简Todo Pro`;
+             pomodoroTimer.setAttribute('aria-live', 'assertive'); // Announce pause
+        }
+
+        function resetPomodoro() {
+             clearInterval(pomodoroInterval);
+             pomodoroIsRunning = false;
+             pomodoroIsWorkTime = true; // Always reset to work time
+             pomodoroTimeLeft = parseInt(workDurationInput.value) * 60;
+             pomodoroTimeLeft = Math.max(0, pomodoroTimeLeft); // Ensure non-negative
+
+             updatePomodoroDisplay(); // Update display to reset value
+
+             // Reset button states
+             startPomodoroBtn.disabled = false;
+             pausePomodoroBtn.disabled = true;
+             workDurationInput.disabled = false;
+             breakDurationInput.disabled = false;
+             document.title = "极简Todo Pro | 莫奈色主题"; // Reset title fully
+             pomodoroTimer.setAttribute('aria-live', 'off');
+        }
+
+        function playPomodoroCompleteSound() {
+             try {
+                 const audio = new Audio('data:audio/mpeg;base64,SUQzBAAAAAAAI noncommutative="1" TPE1 TALB TRCK TCON TDRL TDRC PRIV QAAAAsEtAQABAQAAAAYAAAA/AhxmRQAAABpIAAAG8AAAFoAf8/soMAAEQBgAAAEYA4AAuNDRsF5A0v97x/w/++9f/b7/sPa//1oBkADpAF+APsARwBSAEkAUgBMAEAAQwBJAEAAOQBBAEUATABfAHIAgwCJAJoAkwCMALUAqwC8ANYA+gAEARMBGgEaARIBLgEfATEBLQE4ATgBNwFKAzIDUgNeA9kD8APbBBoEQARoBGQEOAScBNwFEAUUBSgFLAVIBVgFPAVgBWAFYAVABWgFeAXIBegF6AXMBaAFoAWkBagFrAW8BgwF+AYQBhAGCAYUAFgAAAAEBZgABAGgAAQBoAAEBaQABAG8ADgGAABEAhgAWAIgAHgCXACQAmQAqAKAALACvADAAuwA7AN8ATwDeAFkA9gBmAPkAewBBAHIAAAAAAEcABgAAAAAAAArjB3/9f/t/++//9P/p/+/AAMACQAFABYAFgAMAMAAAwAHAAMAAwADAAIAA///8AAAAAwAAAAABAAQApADAAAQAUgAHAFIADQFIAAkAA////wAEAAAAAP//+wD//+cA///sAP//7AD///YA///qAP//9gD//+sAAAAAAQAAAAAAAAAAAAAAAgABAAMAAgABAAIABAACAAMAAQACAAAAAQAAAAAACgAAAAAAAAABAAEAAgACAAMAAgADAAIAAwACAAAAAAAAAAAAAAAAAAAAAAMACQAJAAkA/gACAPsAAwAAAPMAAQDeAAIAAAAAAQAAAAAAAAABAAAAAP///wEAAAAAAAAAAAAAAAAAAAAAAAAAAAABAAIAAQAEAPgA+gD7AAAAAAH8AfwB/AH8AfwB/AH8AfwB/AH8AfwB/AH8AfwB/AH8AfwB/AH8AfwB/AH8AfwB/AH8AfwB/AAMA'); // Different sound for completion
+                 audio.play().catch(e => console.warn('Audio playback failed:', e));
+             } catch (e) {
+                 console.warn('Could not play pomodoro completion sound.', e);
+             }
+        }
+
+        // === Tab Switching ===
+        function switchTab(tabId) {
+            // Update Nav Tabs UI
+            navTabs.forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.tab === tabId);
+                 tab.setAttribute('aria-selected', tab.dataset.tab === tabId);
+            });
+
+            // Update Content Area Visibility
+            contentAreas.forEach(area => {
+                const isActive = area.id === `${tabId}-content`;
+                area.classList.toggle('active', isActive);
+                area.setAttribute('aria-hidden', !isActive); // Accessibility
+                 // Optional: Add subtle animation on tab switch
+                 if (isActive) {
+                     area.style.animation = 'fadeIn 0.5s ease-out forwards';
+                 } else {
+                     area.style.animation = ''; // Clear animation if hiding
+                 }
+            });
+             
+            // Optionally reset Pomodoro timer if switching away from it? Or keep it running?
+            // Keep it running in the background for now.
+        }
+        
+        // === Utilities ===
+        function escapeHTML(str) {
+             const div = document.createElement('div');
+             div.appendChild(document.createTextNode(str));
+             return div.innerHTML;
+        }
+
+
+        // === Event Listeners ===
+        addBtn.addEventListener('click', addTodo);
+        todoInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addTodo(); });
+        filterButtons.forEach(btn => btn.addEventListener('click', () => setFilter(btn.dataset.filter)));
+        navTabs.forEach(tab => {
+            tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+            // Add keyboard support for tabs
+            tab.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') switchTab(tab.dataset.tab); });
+        });
+        requestNotificationBtn.addEventListener('click', requestNotificationPermission);
+        toggleDarkModeBtn.addEventListener('click', toggleDarkMode);
+
+        // Initial call
+        init();
+
+    </script>
+</body>
+</html>
